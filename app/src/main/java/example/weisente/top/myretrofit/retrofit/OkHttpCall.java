@@ -19,6 +19,8 @@ public class OkHttpCall<T> implements Call<T> {
 
     @Override
     public void enqueue(final Callback<T> callback) {
+
+
         okhttp3.Call call = serviceMethod.createNewCall(args);
         call.enqueue(new okhttp3.Callback() {
             @Override

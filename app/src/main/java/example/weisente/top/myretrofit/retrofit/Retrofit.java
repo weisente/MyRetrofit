@@ -3,6 +3,8 @@ package example.weisente.top.myretrofit.retrofit;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import okhttp3.OkHttpClient;
 
@@ -14,6 +16,7 @@ public class Retrofit {
     //基本的参数
     final String baseUrl;
     final okhttp3.Call.Factory callFactory;
+    private Map<Method,ServiceMethod> serviceMethodMapCache = new ConcurrentHashMap<>();
 
     public Retrofit(Builder builder) {
         this.baseUrl = builder.baseUrl;
@@ -30,13 +33,26 @@ public class Retrofit {
                 if(method.getDeclaringClass() == Object.class){
                     return method.invoke(this,args);
                 }
-//                ServiceMethod serviceMethod = loadServiceMethod(method);
-                return null;
+                ServiceMethod serviceMethod = loadServiceMethod(method);
+                OkHttpCall okHttpCall = new OkHttpCall(serviceMethod,args);
+                return okHttpCall;
             }
         });
     }
+    private ServiceMethod loadServiceMethod(Method method) {
+        // 享元设计模式
+        ServiceMethod serviceMethod = serviceMethodMapCache.get(method);
+        if(serviceMethod == null){
+            serviceMethod = new ServiceMethod.Builder(this,method).build();
+            serviceMethodMapCache.put(method,serviceMethod);
+        }
+        return serviceMethod;
+    }
 
-    private class Builder {
+
+
+
+    public static class Builder {
         String baseUrl;
         okhttp3.Call.Factory callFactory;
 
